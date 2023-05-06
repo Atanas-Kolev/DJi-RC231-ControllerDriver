@@ -17,5 +17,4 @@ This script provides an interface for sending controller inputs to a serial devi
 - ### Works with controllers of:
 - DJI Mavic Air 2
 - DJI Mavic Air 2S
-- DJI Mavic Mini
 - DJI Mini 2
