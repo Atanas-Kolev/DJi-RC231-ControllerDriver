@@ -13,3 +13,9 @@ This script provides an interface for sending controller inputs to a serial devi
 1. Connect your serial device to the computer.
 2. Open the script and change the `controller_port` variable to match the COM port of your connected controller.
 3. Run the script.
+
+- ### Works with controllers of:
+- DJI Mavic Air 2
+- DJI Mavic Air 2S
+- DJI Mavic Mini
+- DJI Mini 2
