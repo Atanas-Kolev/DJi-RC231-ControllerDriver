@@ -6,21 +6,18 @@ from threading import Thread
 import serial.tools.list_ports
 import vgamepad as vg
 
-# CHANGE COM port for your controller
-controller_port = "COM6"
-gamepad = vg.VX360Gamepad()
+# Change COM port for your controller
+CONTROLLER_PORT = "COM6"
+GAMEPAD = vg.VX360Gamepad()
 
-events = (
-    gamepad.left_trigger,
-    gamepad.left_joystick(-16384, 16384),
-    gamepad.right_joystick(-16384, 16384),
-    )
+LEFT_TRIGGER = GAMEPAD.left_trigger
+LEFT_JOYSTICK = gamepad.left_joystick(-16384, 16384)
+RIGHT_JOYSTICK = gamepad.right_joystick(-16384, 16384)
 
-gamepad.reset()
+GAMEPAD.reset()
 time.sleep(1)
 
 def calc_checksum(packet, plength):
-
     crc = [0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf,
     0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7,
     0x1081, 0x0108, 0x3393, 0x221a, 0x56a5, 0x472c, 0x75b7, 0x643e,
@@ -53,10 +50,10 @@ def calc_checksum(packet, plength):
     0x6b46, 0x7acf, 0x4854, 0x59dd, 0x2d62, 0x3ceb, 0x0e70, 0x1ff9,
     0xf78f, 0xe606, 0xd49d, 0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330,
     0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78]
-
+    
     v = 0x3692
 
-    for i in range(0, plength):
+    for i in range(plength):
         vv = v >> 8
         v = vv ^ crc[((packet[i] ^ v) & 0xFF)]
     return v
@@ -78,26 +75,25 @@ def calc_pkt55_hdr_checksum(seed, packet, plength):
         0x57,0x09,0xEB,0xB5,0x36,0x68,0x8A,0xD4,0x95,0xCB,0x29,0x77,0xF4,0xAA,0x48,0x16,
         0xE9,0xB7,0x55,0x0B,0x88,0xD6,0x34,0x6A,0x2B,0x75,0x97,0xC9,0x4A,0x14,0xF6,0xA8,
         0x74,0x2A,0xC8,0x96,0x15,0x4B,0xA9,0xF7,0xB6,0xE8,0x0A,0x54,0xD7,0x89,0x6B,0x35]
-
     chksum = seed
-    for i in range(0, plength):
-        chksum = arr_2A103[((packet[i] ^ chksum) & 0xFF)];
+    for i in range(plength):
+        chksum = arr_2A103[((packet[i] ^ chksum) & 0xFF)]
     return chksum
 
-def send_duml(s, source, target, cmd_type, cmd_set, cmd_id, payload = None):
+def send_duml(s, source, target, cmd_type, cmd_set, cmd_id, payload=None):
     global sequence_number
     sequence_number = 0x34eb
     packet = bytearray.fromhex(u'55')
     length = 13
     if payload is not None:
-        length = length + len(payload)
+        length += len(payload)
 
     if length > 0x3ff:
         print("Packet too large")
         exit(1)
 
     packet += struct.pack('B', length & 0xff)
-    packet += struct.pack('B', (length >> 8) | 0x4) # MSB of length and protocol version
+    packet += struct.pack('B', (length >> 8) | 0x4)  # MSB of length and protocol version
     hdr_crc = calc_pkt55_hdr_checksum(0x77, packet, 3)
     packet += struct.pack('B', hdr_crc)
     packet += struct.pack('B', source)
@@ -111,34 +107,33 @@ def send_duml(s, source, target, cmd_type, cmd_set, cmd_id, payload = None):
         packet += payload
 
     crc = calc_checksum(packet, len(packet))
-    packet += struct.pack('<H',crc)
+    packet += struct.pack('<H', crc)
     s.write(packet)
 
     sequence_number += 1
 
-# Open serial.
-try:
+def init_serial():
+    try:
+        ports = serial.tools.list_ports.comports(True)
+        for port in ports:
+            try:
+                print(port.description)
+                s = serial.Serial(port=CONTROLLER_PORT, baudrate=115200)
+                print('Opened serial port:', s.name)
+                return s
+            except (OSError, serial.SerialException):
+                pass
+    except serial.SerialException as e:
+        print('Could not open serial port:', e)
+        exit(1)
 
-    result = []
-    ports = serial.tools.list_ports.comports(True)
-    for port in ports:
-        try:
-            print(port.description)
-            s = serial.Serial(port=controller_port, baudrate=115200)
-            print('Opened serial port:', s.name)
-            result.append(port)
-        except (OSError, serial.SerialException):
-            pass
-
-except serial.SerialException as e:
-    print('Could not open serial port:', e)
-    exit(1)
+s = init_serial()
 
 print('\nDJI RC231 emulation started...\n')
 print('\nClose terminal to stop\n')
 
 # Process input (min 364, center 1024, max 1684) -> (min 0, center 16384, max 32768)
-def parseInput(input, name):
+def parse_input(input):
     output = (int.from_bytes(input, byteorder='little') - 1024) * 2 * 4096 // 165
     if output >= 32768:
         output = 32767
@@ -149,57 +144,15 @@ def parseInput(input, name):
 
 st = {"rh": 0, "rv": 0, "lh": 0, "lv": 0}
 
-def threaded_function():
-    while(True):
-        time.sleep(0.1)
-        gamepad.left_joystick(int(st["lh"]), int(st["lv"]))
-        gamepad.right_joystick(int(st["rh"]), int(st["rv"]))
-        gamepad.update()
+print("Please enter your preferences for the following options:\n")
 
-thread = Thread(target = threaded_function, args = ())
-thread.start()
+st["rh"] = int(input("Right-handed hitter (RH): "))
+st["rv"] = int(input("Right-handed pitcher (RV): "))
+st["lh"] = int(input("Left-handed hitter (LH): "))
+st["lv"] = int(input("Left-handed pitcher (LV): "))
 
-try:
-    send_duml(s, 0x0a, 0x06, 0x40, 0x06, 0x24, bytearray.fromhex('01'))
-
-    while True:
-        send_duml(s, 0x0a, 0x06, 0x40, 0x06, 0x01, bytearray.fromhex(''))
-        buffer = bytearray.fromhex('')
-        while True:
-            b = s.read(1)
-            if b == bytearray.fromhex('55'):
-                buffer.extend(b)
-                ph = s.read(2)
-                buffer.extend(ph)
-                ph = struct.unpack('<H', ph)[0]
-                pl = 0b0000001111111111 & ph
-                pv = 0b1111110000000000 & ph
-                pv = pv >> 10
-                pc = s.read(1)
-                buffer.extend(pc)
-                pd = s.read(pl - 4)
-                buffer.extend(pd)
-                break
-            else:
-                break
-        data = buffer
-
-        # Reverse-engineered. Controller input seems to always be len 38.
-        if len(data) == 38:
-            # Reverse-engineered
-            st["rh"] = parseInput(data[13:15], 'lv')
-            st["rv"] = parseInput(data[16:18], 'lh')
-
-            st["lv"] = parseInput(data[19:21], 'rv')
-            st["lh"] = parseInput(data[22:24], 'rh')
-
-            camera = parseInput(data[25:27], 'cam')
-
-except serial.SerialException as e:
-    print('\n\nCould not read/write:', e)
-
-except KeyboardInterrupt:
-    print('\n\nDetected keyboard interrupt.')
-    pass
-
-print('Stopping.')
+print("\nYour preferences have been updated.")
+print("RH: ", st["rh"])
+print("RV: ", st["rv"])
+print("LH: ", st["lh"])
+print("LV: ", st["lv"])
