@@ -1,5 +1,5 @@
+I wanted to use my Mavic 2 air controller with simulators but it wasn't supported
 This script provides an interface for sending controller inputs to a serial device using vgamepad library.
-
 
 ### Prerequisites
 
