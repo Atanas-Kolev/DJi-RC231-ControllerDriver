@@ -19,3 +19,4 @@ The script reads serially from the controller and emulates as an xbox controller
 - DJI Mavic Air 2
 - DJI Mavic Air 2S
 - DJI Mini 2
+- DJI Mavic 3
