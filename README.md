@@ -1,7 +1,6 @@
 I wanted to use my DJI Mavic 2 Air controller with simulators but it wasn't supported.
-
-The script reads serially from the controller and emulates as an xbox controller
-
+- The script reads serially from the controller and emulates as an xbox controller
+- It's working, but not quite complete
 ### Prerequisites
 
 - Python 3.x
