@@ -1,4 +1,4 @@
-I wanted to use my Mavic 2 air controller with simulators but it wasn't supported.
+I wanted to use my DJI Mavic 2 Air controller with simulators but it wasn't supported.
 
 The script reads serially from the controller and emulates as an xbox controller
 
