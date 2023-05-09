@@ -7,14 +7,14 @@ import serial.tools.list_ports
 import vgamepad as vg
 
 # Change COM port for your controller
-CONTROLLER_PORT = "COM6"
-GAMEPAD = vg.VX360Gamepad()
+controller_port = "COM6"
+gamepad = vg.VX360Gamepad()
 
-LEFT_TRIGGER = GAMEPAD.left_trigger
+LEFT_TRIGGER = gamepad.left_trigger
 LEFT_JOYSTICK = gamepad.left_joystick(-16384, 16384)
 RIGHT_JOYSTICK = gamepad.right_joystick(-16384, 16384)
 
-GAMEPAD.reset()
+gamepad.reset()
 time.sleep(1)
 
 def calc_checksum(packet, plength):
@@ -50,7 +50,7 @@ def calc_checksum(packet, plength):
     0x6b46, 0x7acf, 0x4854, 0x59dd, 0x2d62, 0x3ceb, 0x0e70, 0x1ff9,
     0xf78f, 0xe606, 0xd49d, 0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330,
     0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78]
-    
+
     v = 0x3692
 
     for i in range(plength):
@@ -118,7 +118,7 @@ def init_serial():
         for port in ports:
             try:
                 print(port.description)
-                s = serial.Serial(port=CONTROLLER_PORT, baudrate=115200)
+                s = serial.Serial(port=controller_port, baudrate=115200)
                 print('Opened serial port:', s.name)
                 return s
             except (OSError, serial.SerialException):
